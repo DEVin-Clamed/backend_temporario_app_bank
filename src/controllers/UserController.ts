@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import { AppDataSource } from "../data-source";
 import { User } from "../entity/User";
+import bcrypt from "bcrypt";
 
 class UserController {
   private userRepository;
@@ -22,7 +23,7 @@ class UserController {
         name,
         cpf,
         email,
-        password_hash: password,
+        password_hash: bcrypt.hashSync(password, 10),
       };
 
       const user = await this.userRepository.save(body);

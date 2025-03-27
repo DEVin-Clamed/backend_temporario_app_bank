@@ -1,35 +1,35 @@
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { User } from "../entity/User";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { handleError } from "../middlewares/handleError";
 
-class UserController {
+class AuthController {
+
   private userRepository;
 
   constructor() {
     this.userRepository = AppDataSource.getRepository(User);
   }
 
-  public async login(req: Request, res: Response, next): Promise<void> {
+   login = async (req: Request, res: Response) => {
     try {
       const userLogin = req.body;
 
       const userEntity = await this.userRepository.findOne({
         where: {
-          login: userLogin.email,
+          cpf: userLogin.cpf,
         },
       });
 
       if (!userEntity) {
-        res.status(400).json("Email e/ou senha inválido!");
+        res.status(400).json({error: "Cpf e/ou senha inválido!"});
         return;
       }
 
       const isValid = await bcrypt.compare(
         userLogin.password,
-        userEntity.password
+        userEntity.password_hash
       );
 
       if (!isValid) {
@@ -40,18 +40,18 @@ class UserController {
       const chaveSecretaJwt = process.env.JWT_SECRET ?? "";
 
       const payload = {
-        firstName: userEntity.firstName,
+        firstName: userEntity.name,
         userId: userEntity.id,
       };
 
-      const token = jwt.sign(payload, chaveSecretaJwt, { expiresIn: "1h" });
+      const token = jwt.sign(payload, chaveSecretaJwt, { expiresIn: "8h" });
 
       res.status(200).json({ token: token });
     } catch (error) {
-        next(handleError(error))
-     
+      console.log(error);
+      res.status(500).json("Erro ao realizar login");
     }
-  }
+  };
 }
 
-export default new UserController();
+export default new AuthController();
